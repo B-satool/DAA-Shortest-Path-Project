@@ -13,7 +13,8 @@ import time
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from algorithms.bidirectional_dijkstra import BidirectionalDijkstra
-from algorithms.johnsons_algorithm import JohnsonsAlgorithm
+from algorithms.a_star_algorithm import AStarSearch
+from algorithms.contraction_hierarchies import ContractionHierarchy
 from algorithms.jump_point_search import JumpPointSearch
 from algorithms.graph_utils import GraphGenerator, GraphValidator, TestCaseGenerator
 from benchmarks.metrics import AlgorithmBenchmark
@@ -41,8 +42,8 @@ def generate_runtime_vs_size_graph():
     
     sizes = [20, 40, 60, 80, 100, 150, 200]
     bi_dijkstra_times = []
-    johnson_times = []
-    jps_times = []
+    a_star_times = []
+    ch_times = []
     
     for size in sizes:
         print(f"\nTesting size V={size}...")
@@ -64,16 +65,27 @@ def generate_runtime_vs_size_graph():
         bi_dijkstra_times.append(avg_time)
         print(f"  BiDijkstra: {avg_time:.4f} ms")
         
-        # Test Johnson's
-        johnson = JohnsonsAlgorithm(graph)
+        # Test A*
+        a_star = AStarSearch(graph)
         times = []
         for s, d in test_pairs:
             start = time.time()
-            johnson.find_shortest_path(s, d)
+            a_star.find_shortest_path(s, d)
             times.append(time.time() - start)
         avg_time = sum(times) / len(times) * 1000
-        johnson_times.append(avg_time)
-        print(f"  Johnson's: {avg_time:.4f} ms")
+        a_star_times.append(avg_time)
+        print(f"  A*: {avg_time:.4f} ms")
+        
+        # Test Contraction Hierarchies
+        ch = ContractionHierarchy(graph)
+        times = []
+        for s, d in test_pairs:
+            start = time.time()
+            ch.find_shortest_path(s, d)
+            times.append(time.time() - start)
+        avg_time = sum(times) / len(times) * 1000
+        ch_times.append(avg_time)
+        print(f"  CH: {avg_time:.4f} ms")
         
         # Test JPS (on grid if applicable, else dummy)
         jps = JumpPointSearch(graph)
@@ -85,22 +97,13 @@ def generate_runtime_vs_size_graph():
                 times.append(time.time() - start)
             except:
                 pass
-        if times:
-            avg_time = sum(times) / len(times) * 1000
-            jps_times.append(avg_time)
-        else:
-            jps_times.append(None)
-        print(f"  JPS: {jps_times[-1]:.4f} ms" if jps_times[-1] else "  JPS: N/A")
     
     # Create plot
     fig, ax = plt.subplots(figsize=(10, 6))
     
     ax.plot(sizes, bi_dijkstra_times, marker='o', label='BiDijkstra', linewidth=2, markersize=8)
-    ax.plot(sizes, johnson_times, marker='s', label="Johnson's", linewidth=2, markersize=8)
-    if jps_times and any(jps_times):
-        jps_filtered = [t for t in jps_times if t is not None]
-        if jps_filtered:
-            ax.plot(sizes[:len(jps_filtered)], jps_filtered, marker='^', label='JPS', linewidth=2, markersize=8)
+    ax.plot(sizes, a_star_times, marker='s', label='A*', linewidth=2, markersize=8)
+    ax.plot(sizes, ch_times, marker='^', label='Contraction Hierarchies', linewidth=2, markersize=8)
     
     ax.set_xlabel('Graph Size (Vertices)', fontsize=12, fontweight='bold')
     ax.set_ylabel('Average Runtime (ms)', fontsize=12, fontweight='bold')
@@ -118,8 +121,8 @@ def generate_runtime_vs_size_graph():
     return {
         'sizes': sizes,
         'bi_dijkstra': bi_dijkstra_times,
-        'johnson': johnson_times,
-        'jps': jps_times
+        'a_star': a_star_times,
+        'ch': ch_times
     }
 
 
@@ -136,7 +139,8 @@ def generate_runtime_vs_density_graph():
     densities = [0.05, 0.10, 0.15, 0.25, 0.35, 0.50, 0.70]
     size = 100
     bi_dijkstra_times = []
-    johnson_times = []
+    a_star_times = []
+    ch_times = []
     
     for density in densities:
         print(f"\nTesting density {density*100:.0f}%...")
@@ -158,23 +162,36 @@ def generate_runtime_vs_density_graph():
         bi_dijkstra_times.append(avg_time)
         print(f"  BiDijkstra: {avg_time:.4f} ms")
         
-        # Test Johnson's
-        johnson = JohnsonsAlgorithm(graph)
+        # Test A*
+        a_star = AStarSearch(graph)
         times = []
         for s, d in test_pairs:
             start = time.time()
-            johnson.find_shortest_path(s, d)
+            a_star.find_shortest_path(s, d)
             times.append(time.time() - start)
         avg_time = sum(times) / len(times) * 1000
-        johnson_times.append(avg_time)
-        print(f"  Johnson's: {avg_time:.4f} ms")
+        a_star_times.append(avg_time)
+        print(f"  A*: {avg_time:.4f} ms")
+        
+        # Test Contraction Hierarchies
+        ch = ContractionHierarchy(graph)
+        times = []
+        for s, d in test_pairs:
+            start = time.time()
+            ch.find_shortest_path(s, d)
+            times.append(time.time() - start)
+        avg_time = sum(times) / len(times) * 1000
+        ch_times.append(avg_time)
+        print(f"  CH: {avg_time:.4f} ms")
     
     # Create plot with log scale
     fig, ax = plt.subplots(figsize=(10, 6))
     
     ax.semilogy(densities, bi_dijkstra_times, marker='o', label='BiDijkstra', 
                 linewidth=2, markersize=8, basex=10)
-    ax.semilogy(densities, johnson_times, marker='s', label="Johnson's", 
+    ax.semilogy(densities, a_star_times, marker='s', label='A*', 
+                linewidth=2, markersize=8, basex=10)
+    ax.semilogy(densities, ch_times, marker='^', label='Contraction Hierarchies', 
                 linewidth=2, markersize=8, basex=10)
     
     ax.set_xlabel('Graph Density (proportion of edges)', fontsize=12, fontweight='bold')
@@ -193,7 +210,8 @@ def generate_runtime_vs_density_graph():
     return {
         'densities': densities,
         'bi_dijkstra': bi_dijkstra_times,
-        'johnson': johnson_times
+        'a_star': a_star_times,
+        'ch': ch_times
     }
 
 
@@ -209,7 +227,8 @@ def generate_algorithms_comparison_graph():
     
     sizes = [50, 100, 150, 200, 300]
     bi_dijkstra_times = []
-    johnson_times = []
+    a_star_times = []
+    ch_times = []
     jps_times = []
     
     for size in sizes:
@@ -232,16 +251,27 @@ def generate_algorithms_comparison_graph():
         bi_dijkstra_times.append(avg_time)
         print(f"  BiDijkstra: {avg_time:.4f} ms")
         
-        # Test Johnson's
-        johnson = JohnsonsAlgorithm(graph)
+        # Test A*
+        a_star = AStarSearch(graph)
         times = []
         for s, d in test_pairs:
             start = time.time()
-            johnson.find_shortest_path(s, d)
+            a_star.find_shortest_path(s, d)
             times.append(time.time() - start)
         avg_time = sum(times) / len(times) * 1000
-        johnson_times.append(avg_time)
-        print(f"  Johnson's: {avg_time:.4f} ms")
+        a_star_times.append(avg_time)
+        print(f"  A*: {avg_time:.4f} ms")
+        
+        # Test Contraction Hierarchies
+        ch = ContractionHierarchy(graph)
+        times = []
+        for s, d in test_pairs:
+            start = time.time()
+            ch.find_shortest_path(s, d)
+            times.append(time.time() - start)
+        avg_time = sum(times) / len(times) * 1000
+        ch_times.append(avg_time)
+        print(f"  CH: {avg_time:.4f} ms")
         
         # Test JPS
         jps = JumpPointSearch(graph)
@@ -265,12 +295,14 @@ def generate_algorithms_comparison_graph():
     
     ax.loglog(sizes, bi_dijkstra_times, marker='o', label='BiDijkstra', 
               linewidth=2.5, markersize=9, basex=10, basey=10)
-    ax.loglog(sizes, johnson_times, marker='s', label="Johnson's", 
+    ax.loglog(sizes, a_star_times, marker='s', label="A*", 
+              linewidth=2.5, markersize=9, basex=10, basey=10)
+    ax.loglog(sizes, ch_times, marker='^', label='Contraction Hierarchies', 
               linewidth=2.5, markersize=9, basex=10, basey=10)
     if jps_times and any(jps_times):
         jps_filtered = [t for t in jps_times if t is not None]
         if jps_filtered:
-            ax.loglog(sizes[:len(jps_filtered)], jps_filtered, marker='^', label='JPS', 
+            ax.loglog(sizes[:len(jps_filtered)], jps_filtered, marker='d', label='JPS', 
                      linewidth=2.5, markersize=9, basex=10, basey=10)
     
     ax.set_xlabel('Graph Size (Vertices, log scale)', fontsize=12, fontweight='bold')
@@ -280,7 +312,7 @@ def generate_algorithms_comparison_graph():
     ax.grid(True, alpha=0.3, which='both')
     
     # Add complexity annotations
-    ax.text(0.98, 0.05, 'BiDijkstra: O(V log V)\nJohnson: O(V² log V)\nJPS: O(V) general', 
+    ax.text(0.98, 0.05, 'BiDijkstra: O(V log V)\nA*: O((V+E)log V)\nCH: O(log V)\nJPS: O(V) general', 
             transform=ax.transAxes, fontsize=10, verticalalignment='bottom',
             horizontalalignment='right', bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.5))
     
@@ -294,7 +326,8 @@ def generate_algorithms_comparison_graph():
     return {
         'sizes': sizes,
         'bi_dijkstra': bi_dijkstra_times,
-        'johnson': johnson_times,
+        'a_star': a_star_times,
+        'ch': ch_times,
         'jps': jps_times
     }
 
@@ -438,12 +471,22 @@ def run_comprehensive_benchmark():
             config['vertices']
         )
         
-        # Test Johnson's Algorithm
-        print("Testing Johnson's Algorithm...")
-        johnson = JohnsonsAlgorithm(graph)
+        # Test A* Search
+        print("Testing A* Search...")
+        a_star = AStarSearch(graph)
         benchmark.benchmark_algorithm(
-            f"Johnson_{config['name']}",
-            johnson,
+            f"AStar_{config['name']}",
+            a_star,
+            test_pairs,
+            config['vertices']
+        )
+        
+        # Test Contraction Hierarchies
+        print("Testing Contraction Hierarchies...")
+        ch = ContractionHierarchy(graph)
+        benchmark.benchmark_algorithm(
+            f"CH_{config['name']}",
+            ch,
             test_pairs,
             config['vertices']
         )
@@ -505,12 +548,21 @@ def run_simple_test():
     print(f"  Path: {path}")
     print(f"  Operations: {bi_dijkstra.operations_count}\n")
     
-    # Test Johnson's Algorithm
-    print("Johnson's Algorithm:")
-    johnson = JohnsonsAlgorithm(graph)
-    distance, path = johnson.find_shortest_path(source, destination)
+    # Test A* Search
+    print("A* Search (with zero heuristic):")
+    a_star = AStarSearch(graph)
+    distance, path = a_star.find_shortest_path(source, destination)
     print(f"  Distance: {distance}")
-    print(f"  Operations: {johnson.operations_count}\n")
+    print(f"  Path: {path}")
+    print(f"  Operations: {a_star.operations_count}\n")
+    
+    # Test Contraction Hierarchies
+    print("Contraction Hierarchies:")
+    ch = ContractionHierarchy(graph)
+    distance, path = ch.find_shortest_path(source, destination)
+    print(f"  Distance: {distance}")
+    print(f"  Path: {path}")
+    print(f"  Operations: {ch.operations_count}\n")
     
     # Test Jump Point Search
     print("Jump Point Search:")
