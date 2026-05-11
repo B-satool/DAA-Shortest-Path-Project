@@ -52,10 +52,22 @@ The following algorithms can be used to solve the Shortest Path Problem:
 4. A* Search Algorithm: Heuristic-guided extension of Dijkstra, widely used in
     pathfinding. Finds the single-source shortest path faster when a good heuristic is
     available.
-5. Johnson’s Algorithm: Combines Bellman-Ford and Dijkstra to solve all-pairs
-    shortest paths efficiently on sparse graphs.
+5. Jump Point Search (JPS): Optimized for grid-based pathfinding by exploiting
+    movement symmetry. 10-40× faster on true grid topologies.
 6. BFS (Breadth-First Search): Works only on unweighted graphs where every
     edge has equal cost.
+
+## 3 Selected Algorithms (Final Implementation)
+
+Our team selected the following 4 algorithms for comparison:
+
+1. **Bidirectional Dijkstra**: O(V log V) - Searches from both source and destination
+2. **A* Search**: O((V+E)log V) - Heuristic-guided search for faster queries
+3. **Jump Point Search**: O(√V) on grids - Optimized for grid pathfinding
+4. **Bellman-Ford**: O(VE) - Handles negative edge weights and detects cycles
+
+These algorithms provide diverse approaches: greedy (BiDijkstra), heuristic (A*), 
+symmetry-based (JPS), and relaxation-based (Bellman-Ford).
 
 #### 1
 

@@ -1,6 +1,6 @@
 """
 Comprehensive test suite and main benchmark runner for shortest path algorithms.
-Tests: Bidirectional Dijkstra, Johnson's Algorithm, Jump Point Search
+Tests: Bidirectional Dijkstra, A* Search, Jump Point Search, Bellman-Ford
 Generates empirical complexity graphs and comparative analysis.
 """
 
@@ -14,7 +14,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from algorithms.bidirectional_dijkstra import BidirectionalDijkstra
 from algorithms.a_star_algorithm import AStarSearch
-from algorithms.contraction_hierarchies import ContractionHierarchy
+from algorithms.bellman_ford import BellmanFord
 from algorithms.jump_point_search import JumpPointSearch
 from algorithms.graph_utils import GraphGenerator, GraphValidator, TestCaseGenerator
 from benchmarks.metrics import AlgorithmBenchmark
@@ -43,7 +43,7 @@ def generate_runtime_vs_size_graph():
     sizes = [20, 40, 60, 80, 100, 150, 200]
     bi_dijkstra_times = []
     a_star_times = []
-    ch_times = []
+    bf_times = []
     
     for size in sizes:
         print(f"\nTesting size V={size}...")
@@ -103,7 +103,7 @@ def generate_runtime_vs_size_graph():
     
     ax.plot(sizes, bi_dijkstra_times, marker='o', label='BiDijkstra', linewidth=2, markersize=8)
     ax.plot(sizes, a_star_times, marker='s', label='A*', linewidth=2, markersize=8)
-    ax.plot(sizes, ch_times, marker='^', label='Contraction Hierarchies', linewidth=2, markersize=8)
+    ax.plot(sizes, bf_times, marker='^', label='Bellman-Ford', linewidth=2, markersize=8)
     
     ax.set_xlabel('Graph Size (Vertices)', fontsize=12, fontweight='bold')
     ax.set_ylabel('Average Runtime (ms)', fontsize=12, fontweight='bold')
@@ -122,7 +122,7 @@ def generate_runtime_vs_size_graph():
         'sizes': sizes,
         'bi_dijkstra': bi_dijkstra_times,
         'a_star': a_star_times,
-        'ch': ch_times
+        'bellman_ford': bf_times
     }
 
 
@@ -140,7 +140,7 @@ def generate_runtime_vs_density_graph():
     size = 100
     bi_dijkstra_times = []
     a_star_times = []
-    ch_times = []
+    bf_times = []
     
     for density in densities:
         print(f"\nTesting density {density*100:.0f}%...")
@@ -173,16 +173,16 @@ def generate_runtime_vs_density_graph():
         a_star_times.append(avg_time)
         print(f"  A*: {avg_time:.4f} ms")
         
-        # Test Contraction Hierarchies
-        ch = ContractionHierarchy(graph)
+        # Test Bellman-Ford
+        bf = BellmanFord(graph)
         times = []
         for s, d in test_pairs:
             start = time.time()
-            ch.find_shortest_path(s, d)
+            bf.find_shortest_path(s, d)
             times.append(time.time() - start)
         avg_time = sum(times) / len(times) * 1000
-        ch_times.append(avg_time)
-        print(f"  CH: {avg_time:.4f} ms")
+        bf_times.append(avg_time)
+        print(f"  Bellman-Ford: {avg_time:.4f} ms")
     
     # Create plot with log scale
     fig, ax = plt.subplots(figsize=(10, 6))
@@ -191,7 +191,7 @@ def generate_runtime_vs_density_graph():
                 linewidth=2, markersize=8, basex=10)
     ax.semilogy(densities, a_star_times, marker='s', label='A*', 
                 linewidth=2, markersize=8, basex=10)
-    ax.semilogy(densities, ch_times, marker='^', label='Contraction Hierarchies', 
+    ax.semilogy(densities, bf_times, marker='^', label='Bellman-Ford', 
                 linewidth=2, markersize=8, basex=10)
     
     ax.set_xlabel('Graph Density (proportion of edges)', fontsize=12, fontweight='bold')
@@ -211,7 +211,7 @@ def generate_runtime_vs_density_graph():
         'densities': densities,
         'bi_dijkstra': bi_dijkstra_times,
         'a_star': a_star_times,
-        'ch': ch_times
+        'bellman_ford': bf_times
     }
 
 
@@ -228,7 +228,7 @@ def generate_algorithms_comparison_graph():
     sizes = [50, 100, 150, 200, 300]
     bi_dijkstra_times = []
     a_star_times = []
-    ch_times = []
+    bf_times = []
     jps_times = []
     
     for size in sizes:
@@ -262,16 +262,16 @@ def generate_algorithms_comparison_graph():
         a_star_times.append(avg_time)
         print(f"  A*: {avg_time:.4f} ms")
         
-        # Test Contraction Hierarchies
-        ch = ContractionHierarchy(graph)
+        # Test Bellman-Ford
+        bf = BellmanFord(graph)
         times = []
         for s, d in test_pairs:
             start = time.time()
-            ch.find_shortest_path(s, d)
+            bf.find_shortest_path(s, d)
             times.append(time.time() - start)
         avg_time = sum(times) / len(times) * 1000
-        ch_times.append(avg_time)
-        print(f"  CH: {avg_time:.4f} ms")
+        bf_times.append(avg_time)
+        print(f"  Bellman-Ford: {avg_time:.4f} ms")
         
         # Test JPS
         jps = JumpPointSearch(graph)
@@ -297,7 +297,7 @@ def generate_algorithms_comparison_graph():
               linewidth=2.5, markersize=9, basex=10, basey=10)
     ax.loglog(sizes, a_star_times, marker='s', label="A*", 
               linewidth=2.5, markersize=9, basex=10, basey=10)
-    ax.loglog(sizes, ch_times, marker='^', label='Contraction Hierarchies', 
+    ax.loglog(sizes, bf_times, marker='^', label='Bellman-Ford', 
               linewidth=2.5, markersize=9, basex=10, basey=10)
     if jps_times and any(jps_times):
         jps_filtered = [t for t in jps_times if t is not None]
@@ -312,7 +312,7 @@ def generate_algorithms_comparison_graph():
     ax.grid(True, alpha=0.3, which='both')
     
     # Add complexity annotations
-    ax.text(0.98, 0.05, 'BiDijkstra: O(V log V)\nA*: O((V+E)log V)\nCH: O(log V)\nJPS: O(V) general', 
+    ax.text(0.98, 0.05, 'BiDijkstra: O(V log V)\nA*: O((V+E)log V)\nBF: O(VE)\nJPS: O(V) general', 
             transform=ax.transAxes, fontsize=10, verticalalignment='bottom',
             horizontalalignment='right', bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.5))
     
@@ -327,7 +327,7 @@ def generate_algorithms_comparison_graph():
         'sizes': sizes,
         'bi_dijkstra': bi_dijkstra_times,
         'a_star': a_star_times,
-        'ch': ch_times,
+        'bellman_ford': bf_times,
         'jps': jps_times
     }
 
@@ -481,12 +481,12 @@ def run_comprehensive_benchmark():
             config['vertices']
         )
         
-        # Test Contraction Hierarchies
-        print("Testing Contraction Hierarchies...")
-        ch = ContractionHierarchy(graph)
+        # Test Bellman-Ford
+        print("Testing Bellman-Ford...")
+        bf = BellmanFord(graph)
         benchmark.benchmark_algorithm(
-            f"CH_{config['name']}",
-            ch,
+            f"BellmanFord_{config['name']}",
+            bf,
             test_pairs,
             config['vertices']
         )
@@ -556,13 +556,13 @@ def run_simple_test():
     print(f"  Path: {path}")
     print(f"  Operations: {a_star.operations_count}\n")
     
-    # Test Contraction Hierarchies
-    print("Contraction Hierarchies:")
-    ch = ContractionHierarchy(graph)
-    distance, path = ch.find_shortest_path(source, destination)
+    # Test Bellman-Ford
+    print("Bellman-Ford:")
+    bf = BellmanFord(graph)
+    distance, path = bf.find_shortest_path(source, destination)
     print(f"  Distance: {distance}")
     print(f"  Path: {path}")
-    print(f"  Operations: {ch.operations_count}\n")
+    print(f"  Operations: {bf.operations_count}\n")
     
     # Test Jump Point Search
     print("Jump Point Search:")
@@ -572,7 +572,7 @@ def run_simple_test():
     print(f"  Path: {path}")
     print(f"  Operations: {jps.operations_count}\n")
     
-    print("✓ All algorithms completed successfully!\n")
+    print("[OK] All algorithms completed successfully!\n")
 
 
 if __name__ == "__main__":
@@ -610,7 +610,7 @@ if __name__ == "__main__":
                 json_data[key] = {k: v for k, v in data.items() if k != 'sizes' and k != 'densities'}
             json.dump(json_data, f, indent=2)
         
-        print(f"\n✓ Graph data saved to: {output_file}")
+        print(f"\n[OK] Graph data saved to: {output_file}")
         print("\n" + "="*80)
         print("GRAPH GENERATION COMPLETE")
         print("="*80)
