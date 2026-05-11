@@ -76,16 +76,16 @@ def generate_runtime_vs_size_graph():
         a_star_times.append(avg_time)
         print(f"  A*: {avg_time:.4f} ms")
         
-        # Test Contraction Hierarchies
-        ch = ContractionHierarchy(graph)
+        # Test Bellman-Ford
+        bf = BellmanFord(graph)
         times = []
         for s, d in test_pairs:
             start = time.time()
-            ch.find_shortest_path(s, d)
+            bf.find_shortest_path(s, d)
             times.append(time.time() - start)
         avg_time = sum(times) / len(times) * 1000
-        ch_times.append(avg_time)
-        print(f"  CH: {avg_time:.4f} ms")
+        bf_times.append(avg_time)
+        print(f"  Bellman-Ford: {avg_time:.4f} ms")
         
         # Test JPS (on grid if applicable, else dummy)
         jps = JumpPointSearch(graph)
@@ -188,11 +188,11 @@ def generate_runtime_vs_density_graph():
     fig, ax = plt.subplots(figsize=(10, 6))
     
     ax.semilogy(densities, bi_dijkstra_times, marker='o', label='BiDijkstra', 
-                linewidth=2, markersize=8, basex=10)
+                linewidth=2, markersize=8, base=10)
     ax.semilogy(densities, a_star_times, marker='s', label='A*', 
-                linewidth=2, markersize=8, basex=10)
+                linewidth=2, markersize=8, base=10)
     ax.semilogy(densities, bf_times, marker='^', label='Bellman-Ford', 
-                linewidth=2, markersize=8, basex=10)
+                linewidth=2, markersize=8, base=10)
     
     ax.set_xlabel('Graph Density (proportion of edges)', fontsize=12, fontweight='bold')
     ax.set_ylabel('Average Runtime (ms, log scale)', fontsize=12, fontweight='bold')
@@ -294,16 +294,16 @@ def generate_algorithms_comparison_graph():
     fig, ax = plt.subplots(figsize=(11, 7))
     
     ax.loglog(sizes, bi_dijkstra_times, marker='o', label='BiDijkstra', 
-              linewidth=2.5, markersize=9, basex=10, basey=10)
+              linewidth=2.5, markersize=9, base=10)
     ax.loglog(sizes, a_star_times, marker='s', label="A*", 
-              linewidth=2.5, markersize=9, basex=10, basey=10)
+              linewidth=2.5, markersize=9, base=10)
     ax.loglog(sizes, bf_times, marker='^', label='Bellman-Ford', 
-              linewidth=2.5, markersize=9, basex=10, basey=10)
+              linewidth=2.5, markersize=9, base=10)
     if jps_times and any(jps_times):
         jps_filtered = [t for t in jps_times if t is not None]
         if jps_filtered:
             ax.loglog(sizes[:len(jps_filtered)], jps_filtered, marker='d', label='JPS', 
-                     linewidth=2.5, markersize=9, basex=10, basey=10)
+                     linewidth=2.5, markersize=9, base=10)
     
     ax.set_xlabel('Graph Size (Vertices, log scale)', fontsize=12, fontweight='bold')
     ax.set_ylabel('Average Runtime (ms, log scale)', fontsize=12, fontweight='bold')
@@ -312,9 +312,13 @@ def generate_algorithms_comparison_graph():
     ax.grid(True, alpha=0.3, which='both')
     
     # Add complexity annotations
-    ax.text(0.98, 0.05, 'BiDijkstra: O(V log V)\nA*: O((V+E)log V)\nBF: O(VE)\nJPS: O(V) general', 
+    ax.text(0.98, 0.05, 'BiDijkstra: O(V log V)\nA*: O((V+E)log V)\nBF: O(VE)\nJPS: O((V+E)log V)*', 
             transform=ax.transAxes, fontsize=10, verticalalignment='bottom',
             horizontalalignment='right', bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.5))
+    # Add note about JPS on general graphs
+    ax.text(0.98, 0.15, '*JPS is O(V) on grids only.\nOn general graphs, it behaves like A*.', 
+            transform=ax.transAxes, fontsize=8, verticalalignment='bottom',
+            horizontalalignment='right', style='italic', color='red')
     
     # Save figure
     output_path = os.path.join(os.path.dirname(__file__), 'algorithms_comparison.png')
@@ -359,15 +363,17 @@ def generate_complexity_analysis_graphs():
             start = time.time()
             bi_dijkstra.find_shortest_path(s, d)
             times.append(time.time() - start)
-        empirical.append(sum(times) / len(times) * 1000000)  # in microseconds
+        empirical_seconds = sum(times) / len(times)
+        empirical.append(empirical_seconds)
         
-        # Compute theoretical bounds
+        # Compute theoretical bounds (in operations, not time)
         import math
         v_log_v = size * math.log(size) if size > 0 else 1
         v2_log_v = (size ** 2) * math.log(size) if size > 0 else 1
         
-        theoretical_v_log_v.append(v_log_v / 10)  # Scale for visibility
-        theoretical_v2_log_v.append(v2_log_v / 1000)  # Scale for visibility
+        # Store as raw values - scale will be determined by fitting
+        theoretical_v_log_v.append(v_log_v)
+        theoretical_v2_log_v.append(v2_log_v)
     
     # Create plot
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 5))
@@ -385,11 +391,11 @@ def generate_complexity_analysis_graphs():
     
     # Log scale plot
     ax2.loglog(sizes, empirical, marker='o', label='Empirical (BiDijkstra)', 
-               linewidth=2.5, markersize=8, color='blue', basex=10, basey=10)
+               linewidth=2.5, markersize=8, color='blue', base=10)
     ax2.loglog(sizes, theoretical_v_log_v, '--', label='V log V (scaled)', 
-               linewidth=2, color='red', alpha=0.7, basex=10, basey=10)
-    ax2.loglog(sizes, theoretical_v2_log_v, ':', label='V² log V (dense)', 
-               linewidth=2, color='green', alpha=0.7, basex=10, basey=10)
+               linewidth=2, color='red', alpha=0.7, base=10)
+    ax2.loglog(sizes, theoretical_v2_log_v, ':', label='V^2 log V (dense)', 
+               linewidth=2, color='green', alpha=0.7, base=10)
     ax2.set_xlabel('Graph Size (Vertices, log scale)', fontsize=11, fontweight='bold')
     ax2.set_ylabel('Runtime (microseconds, log scale)', fontsize=11, fontweight='bold')
     ax2.set_title('Empirical vs Theoretical: Log Scale', fontsize=12, fontweight='bold')

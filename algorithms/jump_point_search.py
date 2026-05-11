@@ -73,7 +73,7 @@ class JumpPointSearch:
                 if neighbor in closed_set:
                     continue
                 
-                # Check if we should jump to this neighbor
+                # Check if we should add this neighbor
                 tentative_g = g_score[current] + weight
                 
                 self.comparisons += 1
@@ -82,13 +82,13 @@ class JumpPointSearch:
                     g_score[neighbor] = tentative_g
                     f_score = tentative_g + self.heuristic(neighbor, destination)
                     
-                    # Check if neighbor is a jump point or forced neighbor
+                    # Add neighbor to open set for exploration
+                    # Note: Jump point optimization is not applicable to general graphs
+                    heapq.heappush(open_set, (f_score, tentative_g, neighbor))
+                    
+                    # Track if this is a jump point (for metrics only)
                     if self._is_jump_point(neighbor, current, destination) or neighbor == destination:
                         self.jump_points_found += 1
-                        heapq.heappush(open_set, (f_score, tentative_g, neighbor))
-                    elif not self._has_forced_neighbors(neighbor, current):
-                        # Continue jumping in the same direction
-                        heapq.heappush(open_set, (f_score, tentative_g, neighbor))
         
         return None, []
     
